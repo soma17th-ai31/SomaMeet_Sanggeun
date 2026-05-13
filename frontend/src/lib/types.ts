@@ -80,6 +80,7 @@ export interface BusyBlock {
 export interface ParticipantResponse {
   participant_id: number
   nickname: string
+  token?: string
 }
 
 // Backwards-compat alias.
@@ -113,6 +114,11 @@ export interface IcsErrorResponse {
   error_code: string
   message: string
   suggestion?: string
+}
+
+export interface NaturalLanguageParseResponse {
+  busy_blocks: { start: string; end: string }[]
+  summary: string
 }
 
 export interface Candidate {

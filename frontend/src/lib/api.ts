@@ -13,16 +13,19 @@ import {
   type MeetingCreateResponse,
   type MeetingDetail,
   type MeetingSettingsUpdate,
+  type NaturalLanguageParseResponse,
   type ParticipantJoinRequest,
   type ParticipantLoginRequest,
   type ParticipantResponse,
   type RecommendResponse,
   type TimetableResponse,
 } from "./types"
+import { readParticipantToken } from "./participantSession"
 
 const RAW_BASE = import.meta.env.VITE_API_BASE_URL ?? ""
 // In dev we rely on the Vite proxy at /api. If VITE_API_BASE_URL is set we use it directly.
 const API_BASE = RAW_BASE.replace(/\/$/, "")
+const PARTICIPANT_TOKEN_HEADER = "X-SomaMeet-Participant-Token"
 
 interface RequestOptions {
   method?: "GET" | "POST" | "DELETE" | "PATCH"
@@ -35,6 +38,11 @@ interface RequestOptions {
 async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   const url = `${API_BASE}${path}`
   const headers: Record<string, string> = { ...(opts.headers ?? {}) }
+  const slug = meetingSlugFromPath(path)
+  const participantToken = slug ? readParticipantToken(slug) : null
+  if (participantToken && !headers[PARTICIPANT_TOKEN_HEADER]) {
+    headers[PARTICIPANT_TOKEN_HEADER] = participantToken
+  }
   let body: BodyInit | undefined
 
   if (opts.body !== undefined) {
@@ -79,6 +87,11 @@ async function request<T>(path: string, opts: RequestOptions = {}): Promise<T> {
   }
 
   return parsed as T
+}
+
+function meetingSlugFromPath(path: string): string | null {
+  const match = path.match(/^\/api\/meetings\/([^/?#]+)/)
+  return match?.[1] ? decodeURIComponent(match[1]) : null
 }
 
 // Endpoints — payload shapes track spec §5.1 verbatim.
@@ -171,6 +184,13 @@ export const api = {
     return request<{ busy_blocks: { start: string; end: string }[] }>(
       `/api/meetings/${encodeURIComponent(slug)}/availability/ics/parse`,
       { method: "POST", body: fd, isFormData: true },
+    )
+  },
+
+  parseNaturalLanguage(slug: string, text: string) {
+    return request<NaturalLanguageParseResponse>(
+      `/api/meetings/${encodeURIComponent(slug)}/availability/natural-language/parse`,
+      { method: "POST", body: { text } },
     )
   },
 
