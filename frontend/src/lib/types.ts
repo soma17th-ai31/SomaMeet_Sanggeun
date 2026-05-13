@@ -115,6 +115,11 @@ export interface IcsErrorResponse {
   suggestion?: string
 }
 
+export interface NaturalLanguageParseResponse {
+  busy_blocks: { start: string; end: string }[]
+  summary: string
+}
+
 export interface Candidate {
   start: string
   end: string
